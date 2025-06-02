@@ -16,7 +16,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
-
+use Filament\Tables\Actions\ExportAction;
+use App\Filament\Exports\AttendanceExporter;
+use Filament\Tables\Actions\ExportBulkAction;
 class AttendanceResource extends Resource
 {
     protected static ?string $model = Attendance::class;
@@ -169,10 +171,15 @@ class AttendanceResource extends Resource
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])
+            ->headerActions([
+                ExportAction::make()->exporter(AttendanceExporter::class)->label('Export Attendance')->icon('heroicon-o-arrow-down-on-square')->color('success')
+
+            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+                ExportBulkAction::make()->exporter(AttendanceExporter::class)->label('Export Attendance')->icon('heroicon-o-arrow-down-on-square')->color('success')
             ]);
     }
 

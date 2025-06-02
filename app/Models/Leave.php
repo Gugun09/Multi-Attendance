@@ -31,9 +31,8 @@ class Leave extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function approvedBy()
+    public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
-    
 }

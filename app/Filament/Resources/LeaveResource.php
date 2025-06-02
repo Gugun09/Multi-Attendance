@@ -15,6 +15,9 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Actions\ExportAction;
+use Filament\Tables\Actions\ExportBulkAction;
+use App\Filament\Exports\LeaveExporter;
 
 class LeaveResource extends Resource
 {
@@ -219,11 +222,15 @@ class LeaveResource extends Resource
                         ($record->user_id === auth()->id() && $record->status === 'pending')
                     ),
             ])
+            ->headerActions([
+                ExportAction::make()->exporter(LeaveExporter::class)->label('Export Leave')->icon('heroicon-o-arrow-down-on-square')->color('success')
+            ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->visible(fn () => auth()->user()->hasRole('admin') || auth()->user()->hasRole('super_admin')),
                 ]),
+                ExportBulkAction::make()->exporter(LeaveExporter::class)->label('Export Leave')->icon('heroicon-o-arrow-down-on-square')->color('success')
             ]);
     }
 

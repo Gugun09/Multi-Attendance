@@ -28,6 +28,23 @@ class Kernel extends ConsoleKernel
         $schedule->command('model:prune', ['--model' => 'Illuminate\\Notifications\\DatabaseNotification'])
                  ->daily()
                  ->withoutOverlapping();
+
+        // Database optimization
+        $schedule->command('db:optimize')
+                 ->weekly()
+                 ->sundays()
+                 ->at('02:00')
+                 ->withoutOverlapping();
+
+        // Cache warm-up
+        $schedule->command('cache:warmup')
+                 ->hourly()
+                 ->withoutOverlapping();
+
+        // Clean up old API logs
+        $schedule->command('model:prune', ['--model' => 'App\\Models\\SecurityLog'])
+                 ->daily()
+                 ->withoutOverlapping();
     }
 
     /**

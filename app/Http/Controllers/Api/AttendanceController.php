@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Services\AttendanceService;
+use App\Services\CacheService;
+use App\Jobs\ProcessAttendanceJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
@@ -44,7 +46,11 @@ class AttendanceController extends Controller
     public function todayAttendance(Request $request)
     {
         $user = $request->user();
-        $attendance = AttendanceService::getTodayAttendance($user);
+        
+        $cacheKey = "api_attendance_today_{$user->id}";
+        $attendance = CacheService::cacheApiResponse($cacheKey, function() use ($user) {
+            return AttendanceService::getTodayAttendance($user);
+        }, CacheService::CACHE_SHORT);
 
         return response()->json([
             'success' => true,
@@ -81,6 +87,11 @@ class AttendanceController extends Controller
             $request->location,
             $request->notes
         );
+
+        // Queue background processing
+        if ($result['success'] && $result['attendance']) {
+            ProcessAttendanceJob::dispatch($result['attendance']);
+        }
 
         return response()->json([
             'success' => $result['success'],
@@ -135,34 +146,22 @@ class AttendanceController extends Controller
         $user = $request->user();
         $month = $request->get('month', now()->format('Y-m'));
 
-        $attendances = Attendance::where('user_id', $user->id)
-            ->where('check_in_at', 'like', $month . '%')
-            ->get();
-
-        $totalDays = $attendances->count();
-        $presentDays = $attendances->where('status', 'present')->count();
-        $lateDays = $attendances->where('status', 'late')->count();
-        $absentDays = $attendances->where('status', 'absent')->count();
-        $totalLateMinutes = $attendances->sum('late_minutes');
-        $avgWorkHours = $attendances->avg(function ($attendance) {
-            if ($attendance->actual_work_hours) {
-                $time = Carbon::createFromFormat('H:i:s', $attendance->actual_work_hours);
-                return $time->hour + ($time->minute / 60);
-            }
-            return 0;
-        });
+        $cacheKey = "api_attendance_summary_{$user->id}_{$month}";
+        $summary = CacheService::cacheApiResponse($cacheKey, function() use ($user, $month) {
+            return CacheService::getUserAttendanceSummary($user->id, $month);
+        }, CacheService::CACHE_MEDIUM);
 
         return response()->json([
             'success' => true,
             'data' => [
                 'month' => $month,
-                'total_days' => $totalDays,
-                'present_days' => $presentDays,
-                'late_days' => $lateDays,
-                'absent_days' => $absentDays,
-                'attendance_rate' => $totalDays > 0 ? round((($presentDays + $lateDays) / $totalDays) * 100, 1) : 0,
-                'total_late_minutes' => $totalLateMinutes,
-                'avg_work_hours' => round($avgWorkHours, 2),
+                'total_days' => $summary['total_days'],
+                'present_days' => $summary['present_days'],
+                'late_days' => $summary['late_days'],
+                'absent_days' => $summary['absent_days'],
+                'attendance_rate' => $summary['total_days'] > 0 ? round((($summary['present_days'] + $summary['late_days']) / $summary['total_days']) * 100, 1) : 0,
+                'total_late_minutes' => $summary['total_late_minutes'],
+                'avg_work_hours' => round($summary['avg_work_hours'], 2),
             ]
         ]);
     }

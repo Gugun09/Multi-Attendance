@@ -47,6 +47,9 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'two_factor_confirmed_at' => 'datetime',
+            'two_factor_enabled' => 'boolean',
+            'last_login_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
     }
@@ -69,5 +72,20 @@ class User extends Authenticatable
     public function leaves()
     {
         return $this->hasMany(Leave::class);
+    }
+
+    public function securityLogs()
+    {
+        return $this->hasMany(SecurityLog::class);
+    }
+
+    public function loginAttempts()
+    {
+        return $this->hasMany(LoginAttempt::class, 'email', 'email');
+    }
+
+    public function sessions()
+    {
+        return $this->hasMany(UserSession::class);
     }
 }

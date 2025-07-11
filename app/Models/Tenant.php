@@ -38,6 +38,11 @@ class Tenant extends Model
         return $this->hasMany(Shift::class);
     }
 
+    public function securitySettings()
+    {
+        return $this->hasOne(SecuritySetting::class);
+    }
+
     public function getSettingsAttribute($value)
     {
         return json_decode($value, true);

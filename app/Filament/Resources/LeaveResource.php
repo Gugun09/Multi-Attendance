@@ -18,6 +18,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Actions\ExportAction;
 use Filament\Tables\Actions\ExportBulkAction;
 use App\Filament\Exports\LeaveExporter;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class LeaveResource extends Resource
 {
@@ -229,6 +230,8 @@ class LeaveResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->visible(fn () => auth()->user()->hasRole('admin') || auth()->user()->hasRole('super_admin')),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
                 ExportBulkAction::make()->exporter(LeaveExporter::class)->label('Export Leave')->icon('heroicon-o-arrow-down-on-square')->color('success')
             ]);
@@ -305,6 +308,35 @@ class LeaveResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
+
+        // Superadmin melihat semua cuti
+        if (auth()->user()->hasRole('super_admin')) {
+            return $query;
+        }
+
+        // Admin dan Employee hanya melihat cuti di tenant mereka
+        if (auth()->user()->tenant_id) {
+            $query->where('tenant_id', auth()->user()->tenant_id);
+
+            // Employee hanya melihat cuti mereka sendiri
+            if (auth()->user()->hasRole('employee')) {
+                $query->where('user_id', auth()->id());
+            }
+        } else {
+            // Jika ada user yang login tapi tidak memiliki tenant_id dan bukan superadmin
+            // Ini akan memastikan mereka tidak melihat cuti lain (menampilkan 0 hasil)
+            $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
 
         // Superadmin melihat semua cuti
         if (auth()->user()->hasRole('super_admin')) {

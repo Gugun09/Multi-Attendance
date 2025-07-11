@@ -19,6 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Actions\ExportAction;
 use App\Filament\Exports\AttendanceExporter;
 use Filament\Tables\Actions\ExportBulkAction;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 class AttendanceResource extends Resource
 {
     protected static ?string $model = Attendance::class;
@@ -170,6 +171,8 @@ class AttendanceResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
+                Tables\Actions\RestoreAction::make(),
+                Tables\Actions\ForceDeleteAction::make(),
             ])
             ->headerActions([
                 ExportAction::make()->exporter(AttendanceExporter::class)->label('Export Attendance')->icon('heroicon-o-arrow-down-on-square')->color('success')
@@ -178,6 +181,8 @@ class AttendanceResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\RestoreBulkAction::make(),
+                    Tables\Actions\ForceDeleteBulkAction::make(),
                 ]),
                 ExportBulkAction::make()->exporter(AttendanceExporter::class)->label('Export Attendance')->icon('heroicon-o-arrow-down-on-square')->color('success')
             ]);
@@ -254,6 +259,35 @@ class AttendanceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
+
+        // Superadmin melihat semua absensi
+        if (auth()->user()->hasRole('super_admin')) {
+            return $query;
+        }
+
+        // Admin dan Employee hanya melihat absensi di tenant mereka
+        if (auth()->user()->tenant_id) {
+            $query->where('tenant_id', auth()->user()->tenant_id);
+
+            // Employee hanya melihat absensi mereka sendiri
+            if (auth()->user()->hasRole('employee')) {
+                $query->where('user_id', auth()->id());
+            }
+        } else {
+            // Jika ada user yang login tapi tidak memiliki tenant_id dan bukan superadmin
+            // Ini akan memastikan mereka tidak melihat absensi lain (menampilkan 0 hasil)
+            $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery()
+            ->withoutGlobalScopes([
+                SoftDeletingScope::class,
+            ]);
 
         // Superadmin melihat semua absensi
         if (auth()->user()->hasRole('super_admin')) {

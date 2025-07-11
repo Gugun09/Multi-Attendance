@@ -71,6 +71,59 @@ class AttendanceResource extends Resource
                     ->maxLength(255)
                     ->nullable(), // Lokasi bisa null
 
+                Forms\Components\Grid::make(2)
+                    ->schema([
+                        Forms\Components\TextInput::make('check_in_latitude')
+                            ->numeric()
+                            ->step(0.00000001)
+                            ->label('Check In Latitude'),
+
+                        Forms\Components\TextInput::make('check_in_longitude')
+                            ->numeric()
+                            ->step(0.00000001)
+                            ->label('Check In Longitude'),
+
+                        Forms\Components\TextInput::make('check_out_latitude')
+                            ->numeric()
+                            ->step(0.00000001)
+                            ->label('Check Out Latitude'),
+
+                        Forms\Components\TextInput::make('check_out_longitude')
+                            ->numeric()
+                            ->step(0.00000001)
+                            ->label('Check Out Longitude'),
+                    ]),
+
+                Forms\Components\Grid::make(3)
+                    ->schema([
+                        Forms\Components\Toggle::make('is_within_geofence')
+                            ->label('Within Geofence')
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('distance_from_office')
+                            ->numeric()
+                            ->suffix('meters')
+                            ->label('Distance from Office')
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('actual_work_hours')
+                            ->label('Actual Work Hours')
+                            ->disabled(),
+                    ]),
+
+                Forms\Components\Grid::make(2)
+                    ->schema([
+                        Forms\Components\Toggle::make('is_late')
+                            ->label('Is Late')
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('late_minutes')
+                            ->numeric()
+                            ->suffix('minutes')
+                            ->label('Late Minutes')
+                            ->disabled(),
+                    ]),
+
                 Forms\Components\Textarea::make('notes')
                     ->maxLength(65535)
                     ->columnSpanFull()
@@ -104,6 +157,34 @@ class AttendanceResource extends Resource
                 Tables\Columns\TextColumn::make('check_out_at')
                     ->dateTime() // Format sebagai tanggal dan waktu
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('actual_work_hours')
+                    ->label('Work Hours')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\IconColumn::make('is_late')
+                    ->boolean()
+                    ->label('Late')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('late_minutes')
+                    ->suffix(' min')
+                    ->label('Late Minutes')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\IconColumn::make('is_within_geofence')
+                    ->boolean()
+                    ->label('Valid Location')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('distance_from_office')
+                    ->suffix(' m')
+                    ->label('Distance')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('status')
                     ->badge() // Menampilkan status sebagai badge
                     ->color(fn (string $state): string => match ($state) {

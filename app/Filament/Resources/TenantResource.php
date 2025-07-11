@@ -43,6 +43,78 @@ class TenantResource extends Resource
                     ->keyLabel('Setting Key')
                     ->valueLabel('Setting Value')
                     ->nullable(), // Mengubahnya menjadi nullable sesuai migrasi
+
+                Forms\Components\Section::make('Working Hours')
+                    ->schema([
+                        Forms\Components\TimePicker::make('work_start_time')
+                            ->default('08:00')
+                            ->seconds(false)
+                            ->required(),
+
+                        Forms\Components\TimePicker::make('work_end_time')
+                            ->default('17:00')
+                            ->seconds(false)
+                            ->required(),
+
+                        Forms\Components\TextInput::make('late_tolerance_minutes')
+                            ->numeric()
+                            ->default(15)
+                            ->suffix('minutes')
+                            ->required(),
+
+                        Forms\Components\CheckboxList::make('working_days')
+                            ->options([
+                                'monday' => 'Monday',
+                                'tuesday' => 'Tuesday',
+                                'wednesday' => 'Wednesday',
+                                'thursday' => 'Thursday',
+                                'friday' => 'Friday',
+                                'saturday' => 'Saturday',
+                                'sunday' => 'Sunday',
+                            ])
+                            ->default(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
+                            ->required()
+                            ->columnSpanFull(),
+                    ])->columns(3),
+
+                Forms\Components\Section::make('Break Time')
+                    ->schema([
+                        Forms\Components\TimePicker::make('break_start_time')
+                            ->seconds(false),
+
+                        Forms\Components\TimePicker::make('break_end_time')
+                            ->seconds(false),
+
+                        Forms\Components\TextInput::make('break_duration_minutes')
+                            ->numeric()
+                            ->default(60)
+                            ->suffix('minutes'),
+                    ])->columns(3),
+
+                Forms\Components\Section::make('Geofencing')
+                    ->schema([
+                        Forms\Components\Toggle::make('enforce_geofencing')
+                            ->label('Enable Geofencing')
+                            ->helperText('Require employees to be within office radius for attendance'),
+
+                        Forms\Components\TextInput::make('office_latitude')
+                            ->numeric()
+                            ->step(0.00000001)
+                            ->placeholder('-6.200000')
+                            ->helperText('Office latitude coordinate'),
+
+                        Forms\Components\TextInput::make('office_longitude')
+                            ->numeric()
+                            ->step(0.00000001)
+                            ->placeholder('106.816666')
+                            ->helperText('Office longitude coordinate'),
+
+                        Forms\Components\TextInput::make('geofence_radius_meters')
+                            ->numeric()
+                            ->default(100)
+                            ->suffix('meters')
+                            ->helperText('Maximum distance from office for valid attendance'),
+                    ])->columns(2),
             ]);
     }
 

@@ -51,6 +51,23 @@ class UserResource extends Resource
                     ->columnSpan('full')
                     // Sembunyikan field ini dari Admin, Admin hanya bisa kelola user di tenant-nya
                     ->hidden(fn () => auth()->user()->hasRole('admin')),
+
+                // Field 'shift_id'
+                Forms\Components\Select::make('shift_id')
+                    ->relationship(
+                        'shift',
+                        'name',
+                        fn (Builder $query) => auth()->user()->hasRole('super_admin')
+                            ? $query->where('is_active', true)
+                            : $query->where('tenant_id', auth()->user()->tenant_id)->where('is_active', true)
+                    )
+                    ->label('Work Shift')
+                    ->placeholder('Select Work Shift (optional)')
+                    ->helperText('Assign specific work shift to this employee')
+                    ->nullable()
+                    ->searchable()
+                    ->preload(),
+
                 // Field 'roles' menggunakan relasi Spatie Permission
                 Forms\Components\Select::make('roles')
                     ->multiple()
